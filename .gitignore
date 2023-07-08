@@ -1,0 +1,16 @@
+# Python Virtual Environment
+venv/
+.venv/
+
+# IDE Related
+.vscode/
+.idea/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Compiled Binary / Byte-Code Python
+.py[cod]
+__pycache__/
