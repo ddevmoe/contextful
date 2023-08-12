@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = "contextful"
+description = "Logging helper for contextful logging"
+readme = "README.md"
+requires-python = ">=3.10"
+license.file = "LICENSE"
+authors = [
+    {name = "Moe Dev", email = "ddevmoe@gmail.com"}
+]
+keywords = [
+    "context",
+    "logging",
+    "logger",
+    "logging-utility",
+    "logging-helper",
+]
+
+dynamic = ["version"]
+
+[project.urls]
+homepage = "https://github.com/ddevmoe/contextful"
+repository = "https://github.com/ddevmoe/contextful"
+
+[tool.setuptools.packages.find]
+where = ["contextful"]
+
+[tool.setuptools.dynamic]
+version = {attr = "__version__"}
