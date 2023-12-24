@@ -12,7 +12,7 @@ class LogContext(AbstractContextManager):
         data: dict,
         context_token: Token,
         cleanup_hook: Callable[['LogContext'], None],
-        id_: str = None,
+        id_: str | None = None,
     ):
         self.id = id_ or str(uuid.uuid4())
         self.data = data
