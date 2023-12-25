@@ -77,3 +77,32 @@ class ContextLogger(logging.Logger):
 
         log_context = LogContext(context, context_token, self._remove_context)
         return log_context
+
+    #region Overrides
+
+    def log(self, level: int, msg: object, context: dict | None = None, *args: object, **kwargs):
+        self._log(level, msg, context, *args, **kwargs)
+
+    def debug(self, msg: object, context: dict | None = None, *args, **kwargs):
+        self._log(logging.DEBUG, msg, context, *args, **kwargs)
+
+    def info(self, msg: object, context: dict | None = None, *args, **kwargs):
+        self._log(logging.INFO, msg, context, *args, **kwargs)
+
+    def warn(self, *args, **kwargs):
+        """Warn is unsupported. Use `logger.warning` instead."""
+        raise NotImplementedError('Warn is unsupported. Use `logger.warning` instead.')
+
+    def warning(self, msg: object, context: dict | None = None, *args, **kwargs):
+        self._log(logging.WARNING, msg, context, *args, **kwargs)
+
+    def error(self, msg: object, context: dict | None = None, *args, **kwargs):
+        self._log(logging.ERROR, msg, context, *args, **kwargs)
+
+    def exception(self, msg: object, context: dict | None = None, *args, exc_info: bool = True, **kwargs):
+        self._log(logging.ERROR, msg, context, *args, exc_info=exc_info, **kwargs)
+
+    def critical(self, msg: object, context: dict | None = None, *args, **kwargs):
+        self._log(logging.CRITICAL, msg, context, *args, **kwargs)
+
+    #endregion
