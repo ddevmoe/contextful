@@ -38,8 +38,10 @@ class TestMultiContextDefinitions(TestCase):
         first_log_record: LogRecord | None = next(iter(first_invocation.args), None)
         second_log_record: LogRecord | None = next(iter(second_invocation.args), None)
 
+        assert first_log_record is not None, 'Expected first log record to be generated'
         self.assertEqual(first_log_record.msg, first_message, 'Expected first logger invocation to contain the first message')
-        self.assertEqual(first_log_record.context, first_context, 'Expected second logger invocation to contain the first context')
+        self.assertEqual(getattr(first_log_record, 'context', None), first_context, 'Expected second logger invocation to contain the first context')
 
+        assert second_log_record is not None, 'Expected second log record to be generated'
         self.assertEqual(second_log_record.msg, second_message, 'Expected second logger invocation to contain the second message')
-        self.assertEqual(second_log_record.context, second_context, 'Expected second logger invocation to contain the second context')
+        self.assertEqual(getattr(second_log_record, 'context', None), second_context, 'Expected second logger invocation to contain the second context')

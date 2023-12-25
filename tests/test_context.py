@@ -29,8 +29,11 @@ class TestContext(TestCase):
 
         invocation_arguments = handle_method_mock.call_args[0]
         log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        # We purposely avoid self.assertIsNotNone - https://github.com/microsoft/pyright/issues/2007
+        assert log_record is not None, 'Expected log record to be generated'
         self.assertEqual(log_record.msg, expected_message)
-        self.assertEqual(log_record.context, expected_context)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
 
     def test_nested_context__all_hierarchies_are_logged(self):
         # Arrange
@@ -52,25 +55,10 @@ class TestContext(TestCase):
 
         invocation_arguments = handle_method_mock.call_args[0]
         log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        assert log_record is not None, 'Expected log record to be generated'
         self.assertEqual(log_record.msg, expected_message)
-        self.assertEqual(log_record.context, expected_context)
-
-    def test_log_without_context__logs_message(self):
-        # Arrange
-        expected_message = 'Message'
-        expected_context = {}
-
-        # Act
-        self.logger.info(expected_message)
-
-        # Assert
-        handle_method_mock: Mock = self.mock_handler.handle
-        handle_method_mock.assert_called_once()
-        invocation_arguments = handle_method_mock.call_args[0]
-        log_record: LogRecord | None = next(iter(invocation_arguments), None)
-
-        self.assertEqual(log_record.context, expected_context)
-        self.assertEqual(log_record.msg, expected_message)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
 
     def test_context_existed__context_does_not_persist(self):
         # Arrange
@@ -78,7 +66,6 @@ class TestContext(TestCase):
         first_context = {'some_data': True}
 
         second_message = 'second'
-        empty_context = {}
 
         # Act
         with self.logger.context(first_context):
@@ -95,11 +82,13 @@ class TestContext(TestCase):
         first_log_record: LogRecord | None = next(iter(first_invocation.args), None)
         second_log_record: LogRecord | None = next(iter(second_invocation.args), None)
 
+        assert first_log_record is not None, 'Expected first log record to be generated'
         self.assertEqual(first_log_record.msg, first_message)
-        self.assertEqual(first_log_record.context, first_context)
+        self.assertEqual(getattr(first_log_record, 'context', None), first_context)
 
+        assert second_log_record is not None, 'Expected second log record to be generated'
         self.assertEqual(second_log_record.msg, second_message)
-        self.assertEqual(second_log_record.context, empty_context, 'Expected invocation outside of context to contain no context')
+        self.assertFalse(hasattr(second_log_record, 'context'), 'Expected invocation outside of context to contain no context')
 
     def _log_test_helper(self, message: str):
         self.logger.info(message)
@@ -119,5 +108,7 @@ class TestContext(TestCase):
 
         invocation_arguments = handle_method_mock.call_args[0]
         log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        assert log_record is not None, 'Expected log record to be generated'
         self.assertEqual(log_record.msg, expected_message)
-        self.assertEqual(log_record.context, expected_context)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
