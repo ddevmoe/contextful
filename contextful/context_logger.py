@@ -45,13 +45,16 @@ class ContextLogger(logging.Logger):
         self._always_set_context = always_set_context
         super().__init__(name, level)
 
-    def _log(self, level: int, msg: object, context: dict | None = None, *args, **kwargs):
+    def _log(self, level: int, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):
         if not self.isEnabledFor(level):
             return
 
-        finalized_context = {**_global_context.get(), **(context or {})}
+        if exclude_context:
+            finalized_context = {}
+        else:
+            finalized_context = {**_global_context.get(), **(context or {})}
 
-        # If there's both the global context and the current log's context are empty - log without context
+        # If both the global context and the current log's context are empty - log without context
         if not finalized_context and not self._always_set_context:
             super()._log(level, msg, args, **kwargs)
             return
@@ -81,29 +84,29 @@ class ContextLogger(logging.Logger):
 
     #region Overrides
 
-    def log(self, level: int, msg: object, context: dict | None = None, *args: object, **kwargs):
-        self._log(level, msg, context, *args, **kwargs)
+    def log(self, level: int, msg: object, context: dict | None = None, *args: object, exclude_context: bool = False, **kwargs):
+        self._log(level, msg, context, *args, exclude_context=exclude_context, **kwargs)
 
-    def debug(self, msg: object, context: dict | None = None, *args, **kwargs):
-        self._log(logging.DEBUG, msg, context, *args, **kwargs)
+    def debug(self, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):
+        self._log(logging.DEBUG, msg, context, *args, exclude_context=exclude_context, **kwargs)
 
-    def info(self, msg: object, context: dict | None = None, *args, **kwargs):
-        self._log(logging.INFO, msg, context, *args, **kwargs)
+    def info(self, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):
+        self._log(logging.INFO, msg, context, *args, exclude_context=exclude_context, **kwargs)
 
     def warn(self, *args, **kwargs):
         """Warn is unsupported. Use `logger.warning` instead."""
         raise NotImplementedError('Warn is unsupported. Use `logger.warning` instead.')
 
-    def warning(self, msg: object, context: dict | None = None, *args, **kwargs):
-        self._log(logging.WARNING, msg, context, *args, **kwargs)
+    def warning(self, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):
+        self._log(logging.WARNING, msg, context, *args, exclude_context=exclude_context, **kwargs)
 
-    def error(self, msg: object, context: dict | None = None, *args, **kwargs):
-        self._log(logging.ERROR, msg, context, *args, **kwargs)
+    def error(self, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):
+        self._log(logging.ERROR, msg, context, *args, exclude_context=exclude_context, **kwargs)
 
-    def exception(self, msg: object, context: dict | None = None, *args, exc_info: bool = True, **kwargs):
-        self._log(logging.ERROR, msg, context, *args, exc_info=exc_info, **kwargs)
+    def exception(self, msg: object, context: dict | None = None, *args, exclude_context: bool = False, exc_info: bool = True, **kwargs):
+        self._log(logging.ERROR, msg, context, *args, exclude_context=exclude_context, exc_info=exc_info, **kwargs)
 
-    def critical(self, msg: object, context: dict | None = None, *args, **kwargs):
-        self._log(logging.CRITICAL, msg, context, *args, **kwargs)
+    def critical(self, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):
+        self._log(logging.CRITICAL, msg, context, *args, exclude_context=exclude_context, **kwargs)
 
     #endregion
