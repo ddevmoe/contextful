@@ -1,8 +1,6 @@
 import json
-import traceback
 from datetime import datetime
 from logging import Formatter, LogRecord, StreamHandler
-from typing import Any
 
 
 class JsonFormatter(Formatter):
@@ -14,49 +12,72 @@ class JsonFormatter(Formatter):
     Currently in WIP status - does not provide all of it's planned feature set yet, and is not fully tested.
     """
 
-    __NO_VALUE_SENTINEL = object()
-
     def __init__(
         self,
         log_record_attribute_mapping: dict[str, str],
-        add_timestamp: bool = True,
-        add_traceback: bool = True,
-        ensure_ascii: bool = False,
+        keep_empty_values: bool = False,
+        datefmt: str | None = None,
+        json_dumps_kwargs: dict | None = None,
+        **kwargs,
     ):
         """
-        log_record_attribute_mapping - mapping of attributes on `LogRecord` instances to their respective keys in the resulting formatted record.
-          i.e. to include the level of the log, include a key-value pair in the passed mapping like so:
-          `{'levelname': 'level'}`
-          a common mapping would include the level, the message and the context (of a `ContextLogger`, for instance):
-          `{'levelname': 'level', 'msg': 'message', 'context': 'context}`
+        Args:
+            log_record_attribute_mapping: mapping of attributes on `LogRecord` instances to their respective keys in the resulting formatted record.
+            i.e. to include the level of the log, include a key-value pair in the passed mapping like so:
+            `{"levelname": "level"}`
 
-        add_timestamp - adds a `timestamp` key to each log using `datetime.now().isoformat(timespec='seconds')`
+            a common mapping would include the timestamp, level, the message, the context (of a `ContextLogger`, for instance) and exception tracebacks:
+            ```
+            {
+                "asctime": "timestamp",
+                "levelname": "level",
+                "message": "message",
+                "context": "context",
+                "exc_text": "traceback",
+            }
+            ```
 
-        add_traceback - adds a `traceback` key to each log if it provides exception information ("exc_info") containing the stringified traceback.
-
-        ensure_ascii - passed directly to a `json.dumps` invocation
-        """
-
+            datefmt: log creation timestamp format, isoformat by default (`datetime.isoformat(timespec='seconds')`)
+            json_dumps_kwargs: passed unpacked (**json_dumps_kwargs) to the `json.dumps` invocation
+    """
         self._log_record_attribute_mapping = log_record_attribute_mapping
-        self._add_timestamp = add_timestamp
-        self._add_traceback = add_traceback
-        self._ensure_ascii = ensure_ascii
+        self._keep_empty_values = keep_empty_values
+        self._json_dumps_kwargs = json_dumps_kwargs or {}
+        super().__init__(datefmt=datefmt, **kwargs)
+
+    def usesTime(self) -> bool:
+        return 'asctime' in self._log_record_attribute_mapping
+
+    def formatTime(self, record: LogRecord, datefmt: str | None = None) -> str:
+        log_datetime = datetime.fromtimestamp(record.created)
+
+        if datefmt:
+            return log_datetime.strftime(datefmt)
+
+        return log_datetime.isoformat(timespec='seconds')
+
+    def _prepare_record(self, record: LogRecord):
+        # Maintain behavior of parent Formatter's format method
+        record.message = record.getMessage()
+
+        if self.usesTime():
+            record.asctime = self.formatTime(record, self.datefmt)
+
+        if record.exc_info and not record.exc_text:
+            record.exc_text = self.formatException(record.exc_info)
 
     def format(self, record: LogRecord) -> str:
-        record_data: dict[str, Any] = {}
-        if self._add_timestamp:
-            record_data['timestamp'] = datetime.now().isoformat(timespec='seconds')
+        self._prepare_record(record)
+        record_data = record.__dict__
 
-        for attribute, key_name in self._log_record_attribute_mapping.items():
-            value = getattr(record, attribute, self.__NO_VALUE_SENTINEL)
-            if value is not self.__NO_VALUE_SENTINEL:
-                record_data[key_name] = value
+        formatted_record = {
+            key_name: record_data.get(attribute)
+            for attribute, key_name in self._log_record_attribute_mapping.items()
+            if record_data.get(attribute) or self._keep_empty_values
+        }
 
-        if self._add_traceback and getattr(record, 'exc_info', None):
-            record_data['traceback'] = traceback.format_exc()
-
-        formatted_record = json.dumps(record_data, ensure_ascii=self._ensure_ascii)
-        return formatted_record
+        stringified_record = json.dumps(formatted_record, default=str, **self._json_dumps_kwargs)
+        return stringified_record
 
 
 if __name__ == '__main__':
@@ -68,9 +89,11 @@ if __name__ == '__main__':
 
 
     formatter = JsonFormatter({
+        'asctime': 'timestamp',
         'levelname': 'level',
-        'msg': 'message',
+        'message': 'message',
         'context': 'context',
+        'exc_text': 'traceback',
     })
     console_handler = StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
