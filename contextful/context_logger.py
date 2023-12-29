@@ -38,7 +38,8 @@ class ContextLogger(logging.Logger):
         always_set_context: bool = False,
     ):
         """
-        always_set_context - Ensure `LogRecord` instances always have a `context` attribute set to an empty `dict`, even when no context is provided.
+        Args:
+            always_set_context: Ensure `LogRecord` instances always have a `context` attribute set to an empty `dict`, even when no context is provided.
         """
 
         self._always_set_context = always_set_context
