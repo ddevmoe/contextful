@@ -9,7 +9,7 @@ from contextful import ContextLogger
 class TestContext(TestCase):
     def setUp(self) -> None:
         self.mock_handler = Mock()
-        self.mock_handler.level = logging.INFO
+        self.mock_handler.level = logging.DEBUG
 
         self.logger = ContextLogger()
         self.logger.addHandler(self.mock_handler)
@@ -112,3 +112,107 @@ class TestContext(TestCase):
         assert log_record is not None, 'Expected log record to be generated'
         self.assertEqual(log_record.msg, expected_message)
         self.assertEqual(getattr(log_record, 'context', None), expected_context)
+
+    #region Log Levels Sanity
+
+    def test_level_debug(self):
+        # Arrange
+        expected_message = 'Debug message'
+        expected_context = {'tested_level': 'DEBUG'}
+
+        # Act
+        with self.logger.context(expected_context):
+            self.logger.debug(expected_message)
+
+        # Assert
+        handle_method_mock: Mock = self.mock_handler.handle
+        handle_method_mock.assert_called_once()
+
+        invocation_arguments = handle_method_mock.call_args[0]
+        log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        assert log_record is not None, 'Expected debug log level to generate a record'
+        self.assertEqual(log_record.msg, expected_message)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
+    
+    def test_level_info(self):
+        # Arrange
+        expected_message = 'Info message'
+        expected_context = {'tested_level': 'INFO'}
+
+        # Act
+        with self.logger.context(expected_context):
+            self.logger.info(expected_message)
+
+        # Assert
+        handle_method_mock: Mock = self.mock_handler.handle
+        handle_method_mock.assert_called_once()
+
+        invocation_arguments = handle_method_mock.call_args[0]
+        log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        assert log_record is not None, 'Expected info log level to generate a record'
+        self.assertEqual(log_record.msg, expected_message)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
+
+    def test_level_warning(self):
+        # Arrange
+        expected_message = 'Warning message'
+        expected_context = {'tested_level': 'WARNING'}
+
+        # Act
+        with self.logger.context(expected_context):
+            self.logger.warning(expected_message)
+
+        # Assert
+        handle_method_mock: Mock = self.mock_handler.handle
+        handle_method_mock.assert_called_once()
+
+        invocation_arguments = handle_method_mock.call_args[0]
+        log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        assert log_record is not None, 'Expected warning log level to generate a record'
+        self.assertEqual(log_record.msg, expected_message)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
+
+    def test_level_error(self):
+        # Arrange
+        expected_message = 'Error message'
+        expected_context = {'tested_level': 'ERROR'}
+
+        # Act
+        with self.logger.context(expected_context):
+            self.logger.error(expected_message)
+
+        # Assert
+        handle_method_mock: Mock = self.mock_handler.handle
+        handle_method_mock.assert_called_once()
+
+        invocation_arguments = handle_method_mock.call_args[0]
+        log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        assert log_record is not None, 'Expected error log level to generate a record'
+        self.assertEqual(log_record.msg, expected_message)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
+
+    def test_level_critical(self):
+        # Arrange
+        expected_message = 'Critical message'
+        expected_context = {'tested_level': 'CRITICAL'}
+
+        # Act
+        with self.logger.context(expected_context):
+            self.logger.critical(expected_message)
+
+        # Assert
+        handle_method_mock: Mock = self.mock_handler.handle
+        handle_method_mock.assert_called_once()
+
+        invocation_arguments = handle_method_mock.call_args[0]
+        log_record: LogRecord | None = next(iter(invocation_arguments), None)
+
+        assert log_record is not None, 'Expected critical log level to generate a record'
+        self.assertEqual(log_record.msg, expected_message)
+        self.assertEqual(getattr(log_record, 'context', None), expected_context)
+
+    #endregion
