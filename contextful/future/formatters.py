@@ -1,6 +1,6 @@
 import json
-from datetime import datetime
-from logging import Formatter, LogRecord, StreamHandler
+from datetime import datetime, timezone
+from logging import Formatter, LogRecord
 
 
 class JsonFormatter(Formatter):
@@ -14,7 +14,7 @@ class JsonFormatter(Formatter):
 
     def __init__(
         self,
-        log_record_attribute_mapping: dict[str, str],
+        log_record_field_mapping: dict[str, str],
         keep_empty_values: bool = False,
         datefmt: str | None = None,
         json_dumps_kwargs: dict | None = None,
@@ -22,7 +22,7 @@ class JsonFormatter(Formatter):
     ):
         """
         Args:
-            log_record_attribute_mapping: mapping of attributes on `LogRecord` instances to their respective keys in the resulting formatted record.
+            log_record_field_mapping: mapping of fields on `LogRecord` instances to their respective keys in the resulting formatted record.
             i.e. to include the level of the log, include a key-value pair in the passed mapping like so:
             `{"levelname": "level"}`
 
@@ -37,24 +37,25 @@ class JsonFormatter(Formatter):
             }
             ```
 
-            datefmt: log creation timestamp format, isoformat by default (`datetime.isoformat(timespec='seconds')`)
+            keep_empty_values: wheter or not to keep fields found in `log_record_field_mapping` when their values are empty
+            datefmt: log creation timestamp format, isoformat by default (`datetime.astimezone(timezone.utc).isoformat()`)
             json_dumps_kwargs: passed unpacked (**json_dumps_kwargs) to the `json.dumps` invocation
     """
-        self._log_record_attribute_mapping = log_record_attribute_mapping
+        self._log_record_field_mapping = log_record_field_mapping
         self._keep_empty_values = keep_empty_values
         self._json_dumps_kwargs = json_dumps_kwargs or {}
         super().__init__(datefmt=datefmt, **kwargs)
 
     def usesTime(self) -> bool:
-        return 'asctime' in self._log_record_attribute_mapping
+        return 'asctime' in self._log_record_field_mapping
 
     def formatTime(self, record: LogRecord, datefmt: str | None = None) -> str:
-        log_datetime = datetime.fromtimestamp(record.created)
+        log_datetime = datetime.fromtimestamp(record.created).astimezone(timezone.utc)
 
         if datefmt:
             return log_datetime.strftime(datefmt)
 
-        return log_datetime.isoformat(timespec='seconds')
+        return log_datetime.isoformat()
 
     def _prepare_record(self, record: LogRecord):
         # Maintain behavior of parent Formatter's format method
@@ -71,9 +72,9 @@ class JsonFormatter(Formatter):
         record_data = record.__dict__
 
         formatted_record = {
-            key_name: record_data.get(attribute)
-            for attribute, key_name in self._log_record_attribute_mapping.items()
-            if record_data.get(attribute) or self._keep_empty_values
+            key_name: record_data.get(field)
+            for field, key_name in self._log_record_field_mapping.items()
+            if record_data.get(field) or self._keep_empty_values
         }
 
         stringified_record = json.dumps(formatted_record, default=str, **self._json_dumps_kwargs)
@@ -84,6 +85,7 @@ if __name__ == '__main__':
     """Usage example"""
 
     import sys
+    from logging import StreamHandler
 
     from contextful import ContextLogger
 
