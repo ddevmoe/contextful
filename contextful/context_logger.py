@@ -27,21 +27,28 @@ class LogContext(AbstractContextManager):
         return super().__exit__(*args, **kwargs)
 
 
-_global_context = ContextVar('context_logger_asyncio_context_store', default={})
+_global_context = ContextVar('context_logger_store', default={})
 
 
 class ContextLogger(logging.Logger):
     def __init__(
         self,
         name: str = 'main',
-        level: int = logging.NOTSET,
+        level: int | str = logging.NOTSET,
+        base_context: dict | None = None,
+        top_level_fields: list[str] | None = None,
         always_set_context: bool = False,
     ):
         """
         Args:
+            base_context: Context that'll be included in each log (even if no other context is provided).
+              Setting `exclude_context` to `True` in underlying logging invocations does NOT exclude the base_context.
+            top_level_fields: List of fields that'll be pulled (if found) from given context and placed on the generated `LogRecord` itself.
             always_set_context: Ensure `LogRecord` instances always have a `context` attribute set to an empty `dict`, even when no context is provided.
         """
 
+        self._base_context = (base_context or {}).copy()
+        self._top_level_fields = frozenset(top_level_fields or set())
         self._always_set_context = always_set_context
         super().__init__(name, level)
 
@@ -50,26 +57,25 @@ class ContextLogger(logging.Logger):
             return
 
         if exclude_context:
-            finalized_context = {}
+            finalized_context = self._base_context.copy()  # `base_context` overpowers `exclude_context`
         else:
-            finalized_context = {**_global_context.get(), **(context or {})}
+            finalized_context = {**self._base_context, **_global_context.get(), **(context or {})}
 
-        # If both the global context and the current log's context are empty - log without context
-        if not finalized_context and not self._always_set_context:
-            super()._log(level, msg, args, **kwargs)
-            return
+        extra: dict = kwargs.pop('extra', {})
 
-        # If extra isn't utilized by the current log, add a new one with our context mounted on top
-        if 'extra' not in kwargs:
-            super()._log(level, msg, args, **kwargs, extra={'context': finalized_context})
-            return
-
-        extra = kwargs.get('extra', {})
         if 'context' in extra:
-            raise ValueError('Logging "extra" dict must not contain a key named "context" as it is reserved for ContexLogger\'s usage.')
-        extra['context'] = finalized_context
+            raise ValueError('Logging "extra" dict must not contain a key named "context" as it is reserved for ContexLogger\'s use.')
 
-        super()._log(level, msg, args, **kwargs)
+        # Pop each field in `top_level_fields` found in the given context directly onto `extra` so it'll be set on the generated `LogRecord`
+        for field in self._top_level_fields:
+            if field in finalized_context:
+                extra[field] = finalized_context.pop(field)
+
+        # If there's a context or `always_set_context` is set - assign given context
+        if finalized_context or self._always_set_context:
+            extra['context'] = finalized_context
+
+        super()._log(level, msg, args, **kwargs, extra=extra)
 
     def _remove_context(self, log_context: LogContext):
         _global_context.reset(log_context.context_token)
@@ -82,7 +88,7 @@ class ContextLogger(logging.Logger):
         log_context = LogContext(context, context_token, self._remove_context)
         return log_context
 
-    #region Overrides
+    #region Log Method Overrides
 
     def log(self, level: int, msg: object, context: dict | None = None, *args: object, exclude_context: bool = False, **kwargs):
         self._log(level, msg, context, *args, exclude_context=exclude_context, **kwargs)
