@@ -134,7 +134,7 @@ class TestContext(TestCase):
         assert log_record is not None, 'Expected debug log level to generate a record'
         self.assertEqual(log_record.msg, expected_message)
         self.assertEqual(getattr(log_record, 'context', None), expected_context)
-    
+
     def test_level_info(self):
         # Arrange
         expected_message = 'Info message'
