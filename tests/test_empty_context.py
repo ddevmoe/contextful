@@ -7,7 +7,7 @@ from contextful import ContextLogger
 
 
 class TestContext(TestCase):
-    def _get_logger(self, logger_params: dict) -> tuple[ContextLogger, Mock]:
+    def _get_logger(self, **logger_params) -> tuple[ContextLogger, Mock]:
         mock_handler = Mock()
         mock_handler.level = logging.INFO
 
@@ -18,7 +18,7 @@ class TestContext(TestCase):
 
     def test_context__always_set_context_is_false__no_context_provided__context_is_unset(self):
         # Arrange
-        logger, mock_handler = self._get_logger({'always_set_context': False})
+        logger, mock_handler = self._get_logger(always_set_context=False)
         expected_message = 'Message'
 
         # Act
@@ -36,7 +36,7 @@ class TestContext(TestCase):
 
     def test_context__always_set_context_is_true__no_context_provided__context_is_empty_dict(self):
         # Arrange
-        logger, mock_handler = self._get_logger({'always_set_context': True})
+        logger, mock_handler = self._get_logger(always_set_context=True)
         expected_message = 'Some Message'
         expected_context = {}
 
@@ -57,7 +57,7 @@ class TestContext(TestCase):
 
     def test_context__always_set_context_is_true__context_provided__context_is_set_correctly(self):
         # Arrange
-        logger, mock_handler = self._get_logger({'always_set_context': True})
+        logger, mock_handler = self._get_logger(always_set_context=True)
         expected_message = 'Some Message'
         expected_context = {'some_context': True}
 
