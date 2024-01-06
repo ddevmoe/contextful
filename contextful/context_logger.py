@@ -64,7 +64,7 @@ class ContextLogger(logging.Logger):
         extra: dict = kwargs.pop('extra', {})
 
         if 'context' in extra:
-            raise ValueError('Logging "extra" dict must not contain a key named "context" as it is reserved for ContexLogger\'s use.')
+            raise ValueError('Logging "extra" dict must not contain a key named "context" as it is reserved for ContexLogger\'s use')
 
         # Pop each field in `top_level_fields` found in the given context directly onto `extra` so it'll be set on the generated `LogRecord`
         for field in self._top_level_fields:
@@ -90,7 +90,7 @@ class ContextLogger(logging.Logger):
 
     #region Log Method Overrides
 
-    def log(self, level: int, msg: object, context: dict | None = None, *args: object, exclude_context: bool = False, **kwargs):
+    def log(self, level: int, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):
         self._log(level, msg, context, *args, exclude_context=exclude_context, **kwargs)
 
     def debug(self, msg: object, context: dict | None = None, *args, exclude_context: bool = False, **kwargs):

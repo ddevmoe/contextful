@@ -5,7 +5,7 @@ from logging import Formatter, LogRecord
 
 class JsonFormatter(Formatter):
     """
-    Provides funcionality to emit JSON-formatted logs.
+    Provides functionality to emit JSON-formatted logs.
 
     Useful when logging to ndjson files (and to the console if you don't mind the extra clutter).
 
